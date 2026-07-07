@@ -3,6 +3,8 @@ import usersRouter from "./users.routes.js";
 
 const router = Router();
 
+// Ruta de bienvenida
+
 router.get("/", (req, res) => {
   res.status(200).json({
     success: true,

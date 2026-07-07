@@ -1,4 +1,5 @@
 import UserModel from "../models/user.model.js";
+import { createHash } from "../utils/bcrypt.js";
 
 // Obtener todos los usuarios
 
@@ -34,7 +35,16 @@ export const createUser = async (req, res) => {
       });
     }
 
-    const user = await UserModel.create(req.body);
+    // Encriptar password
+    
+    const hashedPassword = createHash(req.body.password);
+
+    // Crear usuario con password encriptado
+
+    const user = await UserModel.create({
+      ...req.body,
+      password: hashedPassword,
+    });
 
     res.status(201).json({
       success: true,
