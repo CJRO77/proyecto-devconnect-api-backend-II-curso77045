@@ -1,63 +1,57 @@
 import UserModel from "../models/user.model.js";
-import { createHash } from "../utils/bcrypt.js";
+import { createUserService } from "../services/users.service.js";
 
 // Obtener todos los usuarios
 
 export const getUsers = async (req, res) => {
   try {
+
     const users = await UserModel.find();
+
+    const usersWithoutPassword = users.map((user) => {
+      const { password, ...userWithoutPassword } = user.toObject();
+      return userWithoutPassword;
+    });
 
     res.status(200).json({
       success: true,
       message: "Usuarios obtenidos correctamente",
-      data: users,
+      data: usersWithoutPassword,
     });
+
   } catch (error) {
+
     res.status(500).json({
       success: false,
       message: "Error al obtener los usuarios",
       error: error.message,
     });
+
   }
 };
 
 export const createUser = async (req, res) => {
   try {
 
-    const existingUser = await UserModel.findOne({
-      email: req.body.email,
-    });
+    const user = await createUserService(req.body);
 
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "El email ya está registrado",
-      });
-    }
-
-    // Encriptar password
+    // Eliminar password de la respuesta
     
-    const hashedPassword = createHash(req.body.password);
-
-    // Crear usuario con password encriptado
-
-    const user = await UserModel.create({
-      ...req.body,
-      password: hashedPassword,
-    });
+    const { password, ...userWithoutPassword } = user.toObject();
 
     res.status(201).json({
       success: true,
       message: "Usuario creado correctamente",
-      data: user,
+      data: userWithoutPassword,
     });
 
   } catch (error) {
-    res.status(500).json({
+
+    res.status(400).json({
       success: false,
-      message: "Error al crear usuario",
-      error: error.message,
+      message: error.message,
     });
+
   }
 };
 

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import usersRouter from "./users.routes.js";
+import eventsRouter from "./events.routes.js";
 
 const router = Router();
 
@@ -14,6 +15,17 @@ router.get("/", (req, res) => {
   });
 });
 
+// Ruta de salud del servidor
+
+router.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Servidor activo",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 router.use("/users", usersRouter);
+router.use("/events", eventsRouter);
 
 export default router;
