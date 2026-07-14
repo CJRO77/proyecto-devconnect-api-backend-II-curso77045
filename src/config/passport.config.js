@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
-import { loginUserService, createUserService } from "../services/users.service.js";
+import { loginUserService, createUserService,currentUserService } from "../services/users.service.js";
 
 // extraer el token de la cookie
 
@@ -46,5 +46,33 @@ const initializePassport = () => {
   ));
 
 };
+
+passport.use(
+    "current",
+    new JWTStrategy(
+        {
+            jwtFromRequest: ExtractJwt.fromExtractors([
+                cookieExtractor
+            ]),
+            secretOrKey: process.env.JWT_SECRET,
+        },
+        async (payload, done) => {
+
+            try {
+
+                const user = await currentUserService(payload.id);
+
+                return done(null, user);
+
+            } catch (error) {
+
+                return done(error, false);
+
+            }
+
+        }
+    )
+);
+
 
 export default initializePassport;

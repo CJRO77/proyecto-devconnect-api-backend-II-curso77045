@@ -69,9 +69,12 @@ export const register = (req, res) => {
             maxAge: 60 * 60 * 1000,
         });
 
+        const { password, ...userWithoutPassword } = user.toObject();
+
         return res.status(201).json({
             status: "success",
             message: "Usuario registrado correctamente",
+            data: userWithoutPassword,
         });
 
     } catch (error) {

@@ -1,7 +1,8 @@
 import { createHash, isValidPassword } from "../utils/bcrypt.js";
 import {
     findUserByEmail,
-    createUserRepository
+    createUserRepository,
+    findUserById
 } from "../repositories/users.repository.js";
 
   export const createUserService = async (userData) => {
@@ -79,4 +80,16 @@ export const loginUserService = async (email, password) => {
     }
 
     return user;
+};
+
+export const currentUserService = async (id) => {
+
+    const user = await findUserById(id);
+
+    if (!user) {
+        throw new Error("Usuario no encontrado");
+    }
+
+    return user;
+
 };

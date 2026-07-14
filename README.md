@@ -1,6 +1,9 @@
 DevConnect Backend II API
 
-Backend desarrollado como proyecto académico utilizando Node.js, Express.js, MongoDB y Passport.js.
+-Backend desarrollado como proyecto académico para el curso ( BACKEND II de Coderhouse) utilizando Node.js, Express.js, MongoDB y Passport.js.
+
+-Este proyecto implementa una API REST para la gestión de usuarios utilizando una arquitectura por capas (**Controller → Service → Repository**), autenticación mediante **JWT**, contraseñas encriptadas con **bcrypt** y autenticación centralizada con **Passport.js**.
+
 
 📚 Tecnologías utilizadas
 
@@ -19,14 +22,22 @@ GitHub
 ✅ Funcionalidades implementadas
 
 
-Crear usuarios
-Obtener todos los usuarios
-Obtener usuario por ID
-Actualizar usuario
-Eliminar usuario
-Validación de email existente
-Autenticación centralizada con Passport.js (registro, login, sesión actual)
-Emisión de JWT y manejo de sesión mediante cookie HttpOnly
+- Crear usuarios
+- Obtener todos los usuarios
+- Obtener usuario por ID
+- Actualizar usuario
+- Eliminar usuario
+- Validación de campos obligatorios
+- Validación de formato de email
+- Validación de email existente
+- Encriptación de contraseñas con bcrypt
+- Login de usuarios
+- Registro de usuarios
+- Obtención del usuario autenticado
+- Logout
+- Emisión de JWT
+- Manejo de sesión mediante cookies HttpOnly
+- Arquitectura por capas (Controller → Service → Repository)
 
 
 🔐 Autenticación

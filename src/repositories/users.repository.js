@@ -7,3 +7,7 @@ export const findUserByEmail = async (email) => {
 export const createUserRepository = async (userData) => {
     return await UserModel.create(userData);
 };
+
+export const findUserById = async (id) => {
+    return await UserModel.findById(id);
+};
