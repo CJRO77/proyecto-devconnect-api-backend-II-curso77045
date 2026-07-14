@@ -75,11 +75,11 @@ src/
 
 ⚙️ Instalación
 
-bashnpm install
+bash  npm install
 
 ▶️ Ejecutar el proyecto
 
-bashnpm run dev
+bash  npm run dev
 
 🌐 API Base
 
