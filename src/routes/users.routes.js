@@ -1,22 +1,40 @@
 import { Router } from "express";
-import { getUsers,createUser,getUserById,updateUser,deleteUser} from "../controllers/users.controller.js";
+import passport from "passport";
+
+import {
+    getUsers,
+    createUser,
+    getUserById,
+    updateUser,
+    deleteUser,
+} from "../controllers/users.controller.js";
+
+import { authorize } from "../middlewares/authorize.middleware.js";
 
 const router = Router();
 
-// Obtener todos los usuarios
+// Obtener todos los usuarios (Solo Admin)
 
-router.get("/", getUsers);
+router.get(
+    "/",
+    passport.authenticate("current", { session: false }),
+    authorize(["admin"]),
+    getUsers
+);
+
+// Obtener usuario por ID
+
 router.get("/:id", getUserById);
 
-// Crear un nuevo usuario
+// Crear usuario
 
 router.post("/", createUser);
 
-// Actualizar un usuario existente
+// Actualizar usuario
 
 router.put("/:id", updateUser);
 
-// Eliminar un usuario existente
+// Eliminar usuario
 
 router.delete("/:id", deleteUser);
 

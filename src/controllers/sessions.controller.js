@@ -46,10 +46,14 @@ export const logout = (req, res) => {
 
 export const current = (req, res) => {
 
+    //eliminar password antes de enviar la respuesta
+
+    const { password, ...userWithoutPassword } = req.user.toObject();
+
     res.status(200).json({
         status: "success",
         message: "Usuario autenticado",
-        data: req.user
+        data: userWithoutPassword
     });
 
 };

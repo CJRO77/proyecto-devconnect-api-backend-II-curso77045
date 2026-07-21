@@ -9,9 +9,9 @@ const router = Router();
 router.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "🚀 Bienvenido a DevConnect API",
+    message: "Bienvenido a DevConnect API",
     version: "1.0.0",
-    author: "Jonathan Rodriguez"
+    author: "Carlos Jonathan Rodriguez Osorio"
   });
 });
 

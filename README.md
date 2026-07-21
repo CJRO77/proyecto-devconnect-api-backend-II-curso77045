@@ -1,11 +1,11 @@
-DevConnect Backend II API
+*DevConnect Backend II API*
 
 -Backend desarrollado como proyecto académico para el curso ( BACKEND II de Coderhouse) utilizando Node.js, Express.js, MongoDB y Passport.js.
 
--Este proyecto implementa una API REST para la gestión de usuarios utilizando una arquitectura por capas (**Controller → Service → Repository**), autenticación mediante **JWT**, contraseñas encriptadas con **bcrypt** y autenticación centralizada con **Passport.js**.
+-Este proyecto implementa una API REST para la gestión de usuarios y eventos utilizando una arquitectura por capas (**Controller → Service → Repository**), autenticación mediante **JWT**, autorización basada en **roles**, contraseñas encriptadas con **bcrypt** y autenticación centralizada con **Passport.js**.
 
 
-📚 Tecnologías utilizadas
+📚 **Tecnologías utilizadas**
 
 
 Node.js
@@ -15,11 +15,13 @@ Mongoose
 Passport.js (passport-local, passport-jwt)
 JSON Web Tokens (JWT)
 bcrypt
+Cookie-parser
+Dotenv
 Git
 GitHub
 
 
-✅ Funcionalidades implementadas
+✅ **Funcionalidades implementadas**
 
 
 - Crear usuarios
@@ -38,19 +40,44 @@ GitHub
 - Emisión de JWT
 - Manejo de sesión mediante cookies HttpOnly
 - Arquitectura por capas (Controller → Service → Repository)
+- Protección de rutas privadas
+- Control de acceso mediante roles
+- Autenticación basada en cookies HttpOnly
 
 
-🔐 Autenticación
+🏗️ **Arquitectura del proyecto**
 
-La autenticación está centralizada en src/config/passport.config.js mediante tres estrategias de Passport:
 
-EstrategiaTipoDescripciónregisterpassport-localValida y normaliza los datos, verifica que el email no exista, hashea la contraseña con bcrypt y crea el usuario con rol por defecto (user).loginpassport-localValida las credenciales del usuario contra la base de datos. Si son inválidas, responde con un mensaje genérico ("Credenciales inválidas").currentpassport-jwtExtrae el JWT desde la cookie currentUser, lo valida y deja el payload (id, email, role) disponible en req.user.
+  El proyecto sigue una arquitectura por capas para mantener una correcta separación de responsabilidades.
 
-Importante: las estrategias register y login no generan el JWT. Esa responsabilidad es del controller (sessions.controller.js), que genera el token tras una autenticación exitosa y lo setea en una cookie httpOnly.
+  Controllers
+      ↓
+  Services
+      ↓
+  Repositories
+      ↓
+   Models
+      ↓
+   MongoDB
 
-El sistema está preparado para agregar nuevas estrategias (por ejemplo, Google o GitHub OAuth) simplemente sumando un nuevo passport.use(...) dentro de passport.config.js, sin necesidad de modificar app.js ni las rutas existentes.
+   Responsabilidad de cada capa
+   Controllers: reciben las peticiones HTTP y construyen las respuestas.
+   Services: contienen la lógica de negocio.
+   Repositories: realizan las operaciones sobre la base de datos.
+   Models: definen la estructura de los documentos de MongoDB mediante Mongoose.
 
-📡 Rutas de sesión
+
+🔐 **Autenticación**
+
+
+*Estrategia*	                *Tipo*               	             *Descripción*
+
+-register	               -passport-local	         -Registra un nuevo usuario validando sus datos y encriptando la contraseña.
+-login	                   -passport-local	         -Valida las credenciales del usuario.
+-current	               -passport-jwt	         -Obtiene el usuario autenticado desde el JWT almacenado en la cookie.
+
+📡 **Rutas de sesión**
+
 
 Base: /api/v1/sessions
 
@@ -58,7 +85,82 @@ MétodoRutaDescripciónRespuesta exitosaPOST/registerRegistra un nuevo usuario20
 
 Credenciales inválidas o token ausente/inválido → 401 { "status": "error", "message": "..." }
 
-🔑 Variables de entorno
+
+👥 **Sistema de roles**
+
+*User*
+
+Puede:
+
+Iniciar sesión.
+Consultar eventos.
+
+No puede:
+
+Crear eventos.
+Modificar eventos.
+Eliminar eventos.
+Administrar usuarios.
+
+*Organizer*
+
+Puede:
+
+Crear eventos.
+Modificar únicamente los eventos que él mismo creó.
+Consultar eventos.
+
+No puede:
+
+Eliminar cualquier evento.
+Administrar usuarios.
+
+*Admin*
+
+Tiene acceso completo al sistema.
+
+Puede:
+
+Administrar usuarios.
+Crear eventos.
+Modificar cualquier evento.
+Eliminar cualquier evento.
+
+
+📡 **Endpoints principales**
+
+*Sessions*
+POST   /api/v1/sessions/register
+POST   /api/v1/sessions/login
+POST   /api/v1/sessions/logout
+GET    /api/v1/sessions/current
+
+*Users*
+GET    /api/v1/users
+GET    /api/v1/users/:id
+PUT    /api/v1/users/:id
+DELETE /api/v1/users/:id
+
+*Events*
+GET    /api/v1/events
+GET    /api/v1/events/:id
+POST   /api/v1/events
+PUT    /api/v1/events/:id
+DELETE /api/v1/events/:id
+
+
+🔒 **Permisos de acceso**
+
+
+Endpoint	         User	      Organizer	              Admin
+GET /events	          ✅	            ✅	                ✅
+POST /events          ❌	            ✅	                ✅
+PUT /events/ :id      ❌	            ✅ (solo propios)	✅
+DELETE /events/ :id	  ❌	            ❌   	            ✅
+GET /users	          ❌	            ❌	                ✅
+
+
+🔑 **Variables de entorno**
 
 Ver .env.example. Se requieren:
 
@@ -68,7 +170,7 @@ JWT_SECRET=tu_secreto_super_seguro
 JWT_EXPIRES_IN=1h
 NODE_ENV=development
 
-📂 Estructura del proyecto
+📂 **Estructura del proyecto**
 
 src/
 ├── config/
@@ -84,7 +186,8 @@ src/
 ├── app.js                   # passport.initialize()
 └── server.js
 
-⚙️ Instalación
+
+⚙️ **Instalación**
 
 bash  npm install
 
@@ -92,12 +195,31 @@ bash  npm install
 
 bash  npm run dev
 
-🌐 API Base
+
+🌐 **API Base**
 
 http://localhost:3000/api/v1
 
-👨‍💻 Autor
+
+## 🧪 Pruebas realizadas
+
+- Registro de usuarios.
+- Login.
+- Logout.
+- Usuario autenticado.
+- CRUD de usuarios.
+- CRUD de eventos.
+- Protección mediante JWT.
+- Protección por roles.
+
+
+👨‍💻 **Autor**
 
 Carlos Jonathan Rodriguez Osorio
 
 Backend Developer in Training
+
+## 📄 Licencia
+
+Este proyecto fue desarrollado con fines educativos y de aprobación, como parte del curso Backend II de Coderhouse.
+No está destinado para uso comercial.
