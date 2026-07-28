@@ -36,6 +36,12 @@ const eventSchema = new mongoose.Schema(
             required: true,
             min: 1,
         },
+
+        price: {
+            type: Number,
+            required: true,
+            min: 0,
+        },
        
         organizer: {
             type: mongoose.Schema.Types.ObjectId,
@@ -45,8 +51,8 @@ const eventSchema = new mongoose.Schema(
 
         status: {
             type: String,
-            enum: ["active", "cancelled"],
-            default: "active",
+            enum: ["draft", "published", "cancelled", "finished"],
+            default: "draft",
         },
     },
     {

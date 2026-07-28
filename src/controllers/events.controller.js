@@ -39,12 +39,10 @@ export const createEvent = async (req, res) => {
 
     try {
 
-        const eventData = {
-            ...req.body,
-            organizer: req.user._id,
-        };
-
-        const event = await createEventService(eventData);
+     const event = await createEventService(
+      req.body,
+      req.user
+    );
 
         return res.status(201).json({
             status: "success",

@@ -6,32 +6,111 @@ import {
     deleteEventRepository,
 } from "../repositories/events.repository.js";
 
-export const createEventService = async (eventData) => {
 
+// Crear un evento
 
-     // funcion para validar los campos obligatorios del evento
+export const createEventService = async (eventData, currentUser) => {
 
+    // Asignar automáticamente el organizador
 
-    const { title, description, category, location, date, capacity } = eventData;    
+    eventData.organizer = currentUser._id;
 
-    if (!title || !description || !category || !location || !date || !capacity) {
+    // Obtener los datos del evento
+
+    const {
+        title,
+        description,
+        category,
+        location,
+        date,
+        capacity,
+        price,
+    } = eventData;
+
+    // Validar campos obligatorios
+
+    if (
+        !title ||
+        !description ||
+        !category ||
+        !location ||
+        !date ||
+        capacity === undefined ||
+        price === undefined
+    ) {
         throw new Error("Todos los campos son obligatorios");
     }
-    const event = await createEventRepository(eventData);
 
-    return event;
+    // Validar formato de fecha
 
+    const eventDate = new Date(date);
+
+    if (isNaN(eventDate.getTime())) {
+        throw new Error("La fecha del evento no es válida");
+    }
+
+    // No permitir fechas pasadas
+
+    if (eventDate < new Date()) {
+        throw new Error("No se pueden crear eventos con fechas pasadas");
+    }
+
+    // Validar capacidad
+
+    if (capacity <= 0) {
+        throw new Error("La capacidad del evento debe ser mayor a 0");
+    }
+
+    // Validar precio
+
+    if (price < 0) {
+        throw new Error("El precio del evento no puede ser negativo");
+    }
+
+    // Validar longitud del título
+
+    if (title.length < 5 || title.length > 100) {
+        throw new Error(
+            "El título del evento debe tener entre 5 y 100 caracteres"
+        );
+    }
+
+    // Validar longitud de la descripción
+
+    if (description.length < 10 || description.length > 1000) {
+        throw new Error(
+            "La descripción del evento debe tener entre 10 y 1000 caracteres"
+        );
+    }
+
+    // Validar longitud de la categoría
+
+    if (category.length < 3 || category.length > 50) {
+        throw new Error(
+            "La categoría del evento debe tener entre 3 y 50 caracteres"
+        );
+    }
+
+    // Validar longitud de la ubicación
+
+    if (location.length < 5 || location.length > 100) {
+        throw new Error(
+            "La ubicación del evento debe tener entre 5 y 100 caracteres"
+        );
+    }
+
+    return await createEventRepository(eventData);
 };
 
-     // funcion para obtener todos los eventos
+// Obtener todos los eventos
 
 export const getEventsService = async () => {
 
     return await getEventsRepository();
+
 };
 
-
-// Función para obtener un evento por su ID
+// Obtener un evento por ID
 
 export const getEventByIdService = async (id) => {
 
@@ -45,7 +124,7 @@ export const getEventByIdService = async (id) => {
 
 };
 
-// Función para actualizar un evento por su ID
+// Actualizar un evento
 
 export const updateEventService = async (
     id,
@@ -61,7 +140,53 @@ export const updateEventService = async (
         throw new Error("Evento no encontrado");
     }
 
-    // Si es administrador, puede modificar cualquier evento
+    // No permitir modificar eventos cancelados
+
+    if (event.status === "cancelled") {
+        throw new Error("No se puede modificar un evento cancelado");
+    }
+
+    // Validar capacidad
+
+    if (
+        eventData.capacity !== undefined &&
+        eventData.capacity <= 0
+    ) {
+        throw new Error(
+            "La capacidad del evento debe ser mayor a 0"
+        );
+    }
+
+    // validar precio
+
+    if (
+        eventData.price !== undefined &&
+        eventData.price < 0
+    ) {
+        throw new Error(
+            "El precio del evento no puede ser negativo"
+        );
+    }
+
+    // Validar fecha si se proporciona una nueva fecha
+
+    if (eventData.date) {
+
+        const eventDate = new Date(eventData.date);
+
+        if (isNaN(eventDate.getTime())) {
+            throw new Error("La fecha del evento no es válida");
+        }
+
+        if (eventDate < new Date()) {
+            throw new Error(
+                "La fecha del evento no puede ser anterior a la fecha actual"
+            );
+        }
+
+    }
+
+    // El administrador puede modificar cualquier evento
 
     if (currentUser.role === "admin") {
 
@@ -72,17 +197,15 @@ export const updateEventService = async (
 
     }
 
-    // Si no es administrador, debe ser el organizador del evento
+    // El organizador solo puede modificar sus propios eventos
 
-    if (event.organizer.toString() !== currentUser._id.toString()) {
-
+    if (
+        event.organizer.toString() !== currentUser._id.toString()
+    ) {
         throw new Error(
             "No tienes permisos para modificar este evento"
         );
-
     }
-
-    // Actualizar el evento
 
     return await updateEventRepository(
         id,
@@ -91,7 +214,7 @@ export const updateEventService = async (
 
 };
 
-    // funcion para eliminar un evento por su id
+// Eliminar un evento
 
 export const deleteEventService = async (id) => {
 
@@ -100,7 +223,7 @@ export const deleteEventService = async (id) => {
     if (!event) {
         throw new Error("Evento no encontrado");
     }
-    
+
     return event;
 
 };
