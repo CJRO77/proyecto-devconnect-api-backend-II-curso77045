@@ -3,7 +3,7 @@ import {
     getEventsRepository,
     getEventByIdRepository,
     updateEventRepository,
-    deleteEventRepository,
+    changeEventStatusRepository,
 } from "../repositories/events.repository.js";
 
 
@@ -104,9 +104,79 @@ export const createEventService = async (eventData, currentUser) => {
 
 // Obtener todos los eventos
 
-export const getEventsService = async () => {
+export const getEventsService = async (filters) => {
 
-    return await getEventsRepository();
+    const {
+        status,
+        category,
+        location,
+        dateFrom,
+        dateTo,
+        page = 1,
+        limit = 10,
+        sort,
+    } = filters;
+
+    // Objeto con los filtros para MongoDB
+
+    const query = {};
+
+    // Filtrar por estado
+
+    if (status) {
+        query.status = status;
+    }
+
+    // Filtrar por categoría
+
+    if (category) {
+        query.category = category;
+    }
+
+    // Filtrar por ubicación
+
+    if (location) {
+        query.location = location;
+    }
+
+    // Filtrar por rango de fechas
+
+    if (dateFrom || dateTo) {
+
+        query.date = {};
+
+        if (dateFrom) {
+            query.date.$gte = new Date(dateFrom);
+        }
+
+        if (dateTo) {
+            query.date.$lte = new Date(dateTo);
+        }
+
+    }
+
+    // Configurar paginación
+
+    const currentPage = parseInt(page, 10);
+
+    const currentLimit = parseInt(limit, 10);
+
+    // Configurar ordenamiento
+
+   const sortOptions = {};
+
+   if (sort === "date") {
+    sortOptions.date = 1;
+    } else if (sort === "-date") {
+    sortOptions.date = -1;
+   }  
+
+    return await getEventsRepository(
+        query,
+        currentPage,
+        currentLimit,
+        sortOptions
+    );
 
 };
 
@@ -199,13 +269,11 @@ export const updateEventService = async (
 
     // El organizador solo puede modificar sus propios eventos
 
-    if (
-        event.organizer.toString() !== currentUser._id.toString()
-    ) {
-        throw new Error(
-            "No tienes permisos para modificar este evento"
-        );
-    }
+  if (!event.organizer.equals(currentUser._id)) {
+    throw new Error(
+        "No tienes permisos para modificar este evento"
+    );
+}
 
     return await updateEventRepository(
         id,
@@ -214,16 +282,77 @@ export const updateEventService = async (
 
 };
 
-// Eliminar un evento
 
-export const deleteEventService = async (id) => {
+// Cambiar el estado de un evento
 
-    const event = await deleteEventRepository(id);
+export const changeEventStatusService = async (
+    id,
+    status,
+    currentUser
+) => {
+
+    // Buscar el evento
+
+    const event = await getEventByIdRepository(id);
 
     if (!event) {
         throw new Error("Evento no encontrado");
     }
 
-    return event;
+    // Validar estados permitidos
+
+    const validStatus = [
+        "draft",
+        "published",
+        "cancelled",
+        "finished",
+    ];
+
+    if (!validStatus.includes(status)) {
+        throw new Error("Estado del evento no válido");
+    }
+
+    // No permitir publicar eventos cancelados o finalizados
+
+if (
+    status === "published" &&
+    (event.status === "cancelled" || event.status === "finished")
+) {
+    throw new Error(
+        "No se puede publicar un evento cancelado o finalizado"
+    );
+}
+
+    // No permitir modificar eventos cancelados
+
+    if (event.status === "cancelled") {
+        throw new Error("No se puede modificar un evento cancelado");
+    }
+
+    // El administrador puede modificar cualquier evento
+
+    if (currentUser.role === "admin") {
+
+        return await changeEventStatusRepository(
+            id,
+            status
+        );
+
+    }
+
+    // El organizador solo puede modificar sus propios eventos
+
+ if (!event.organizer.equals(currentUser._id)) {
+    throw new Error(
+        "No tienes permisos para modificar este evento"
+    );
+}
+
+    // Actualizar el estado
+
+    return await changeEventStatusRepository(
+        id,
+        status
+    );
 
 };

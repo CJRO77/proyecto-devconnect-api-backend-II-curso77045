@@ -3,9 +3,8 @@ import {
     getEventsService,
     getEventByIdService,
     updateEventService,
-    deleteEventService,
+    changeEventStatusService,
 } from "../services/events.service.js";
-
 
 // Obtener todos los eventos
 
@@ -13,11 +12,10 @@ export const getEvents = async (req, res) => {
 
     try {
 
-        const events = await getEventsService();
+        const events = await getEventsService(req.query);
 
         return res.status(200).json({
             status: "success",
-            message: "Lista de eventos",
             payload: events,
         });
 
@@ -32,17 +30,16 @@ export const getEvents = async (req, res) => {
 
 };
 
-
-// Crear un nuevo evento
+// Crear un evento
 
 export const createEvent = async (req, res) => {
 
     try {
 
-     const event = await createEventService(
-      req.body,
-      req.user
-    );
+        const event = await createEventService(
+            req.body,
+            req.user
+        );
 
         return res.status(201).json({
             status: "success",
@@ -61,8 +58,7 @@ export const createEvent = async (req, res) => {
 
 };
 
-
-// Obtener un evento por ID
+// Obtener evento por id
 
 export const getEventById = async (req, res) => {
 
@@ -86,8 +82,7 @@ export const getEventById = async (req, res) => {
 
 };
 
-
-// Actualizar un evento
+// Actualizar evento
 
 export const updateEvent = async (req, res) => {
 
@@ -107,6 +102,15 @@ export const updateEvent = async (req, res) => {
 
     } catch (error) {
 
+        if (error.message === "Evento no encontrado") {
+
+            return res.status(404).json({
+                status: "error",
+                message: error.message,
+            });
+
+        }
+
         return res.status(400).json({
             status: "error",
             message: error.message,
@@ -117,26 +121,45 @@ export const updateEvent = async (req, res) => {
 };
 
 
-// Eliminar un evento
+// Cambiar estado
 
-export const deleteEvent = async (req, res) => {
+export const changeEventStatus = async (req, res) => {
 
     try {
 
-        await deleteEventService(req.params.id);
+        const { status } = req.body;
+
+        const event = await changeEventStatusService(
+            req.params.id,
+            status,
+            req.user
+        );
 
         return res.status(200).json({
             status: "success",
-            message: "Evento eliminado correctamente",
+            message: "Estado del evento actualizado correctamente",
+            payload: event,
         });
 
-    } catch (error) {
+    } 
+    
+    
+ catch (error) {
 
-        return res.status(400).json({
+    if (error.message === "Evento no encontrado") {
+
+        return res.status(404).json({
             status: "error",
             message: error.message,
         });
 
     }
 
-};
+    return res.status(400).json({
+        status: "error",
+        message: error.message,
+    });
+
+}
+
+}

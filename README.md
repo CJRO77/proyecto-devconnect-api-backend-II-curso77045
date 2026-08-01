@@ -17,6 +17,7 @@ JSON Web Tokens (JWT)
 bcrypt
 Cookie-parser
 Dotenv
+Nodemon
 Git
 GitHub
 
@@ -109,6 +110,7 @@ Puede:
 Crear eventos.
 Modificar únicamente los eventos que él mismo creó.
 Consultar eventos.
+Cambiar el estado de sus propios eventos.
 
 No puede:
 
@@ -146,18 +148,18 @@ GET    /api/v1/events
 GET    /api/v1/events/:id
 POST   /api/v1/events
 PUT    /api/v1/events/:id
-DELETE /api/v1/events/:id
+PATCH  /api/v1/events/:id/status
 
 
 🔒 **Permisos de acceso**
 
 
-Endpoint	         User	      Organizer	              Admin
-GET /events	          ✅	            ✅	                ✅
-POST /events          ❌	            ✅	                ✅
-PUT /events/ :id      ❌	            ✅ (solo propios)	✅
-DELETE /events/ :id	  ❌	            ❌   	            ✅
-GET /users	          ❌	            ❌	                ✅
+Endpoint	                   User	          Organizer	              Admin
+GET /events	                   ✅	            ✅	                ✅
+POST /events                   ❌	            ✅	                ✅
+PUT /events/ :id               ❌	            ✅ (solo propios)	✅
+PATCH /events/:id/status	   ❌	            ✅ (solo propios)    ✅
+GET /users	                   ❌	            ❌	                ✅
 
 
 🔑 **Variables de entorno**
@@ -165,7 +167,7 @@ GET /users	          ❌	            ❌	                ✅
 Ver .env.example. Se requieren:
 
 PORT=3000
-MONGO_URI=mongodb://localhost:27017/devconnect
+MONGODB_URI=mongodb://localhost:27017/devconnect
 JWT_SECRET=tu_secreto_super_seguro
 JWT_EXPIRES_IN=1h
 NODE_ENV=development
@@ -189,11 +191,15 @@ src/
 
 ⚙️ **Instalación**
 
-bash  npm install
+```bash
+npm install
+```
 
 ▶️ Ejecutar el proyecto
 
-bash  npm run dev
+```bash
+npm run dev
+```
 
 
 🌐 **API Base**
@@ -211,6 +217,22 @@ http://localhost:3000/api/v1
 - CRUD de eventos.
 - Protección mediante JWT.
 - Protección por roles.
+- Cambio de estado de eventos.
+- Filtros de eventos.
+- Paginación.
+- Ordenamiento.
+
+## 🎟 Gestión de Eventos
+
+La API permite:
+
+- Crear eventos.
+- Consultar eventos.
+- Filtrar eventos.
+- Ordenar resultados.
+- Paginar resultados.
+- Modificar eventos.
+- Cambiar el estado de un evento.
 
 
 👨‍💻 **Autor**

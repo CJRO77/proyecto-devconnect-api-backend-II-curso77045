@@ -5,7 +5,7 @@ import {
     createEvent,
     getEventById,
     updateEvent,
-    deleteEvent,
+    changeEventStatus,
 } from "../controllers/events.controller.js";
 import { authorize } from "../middlewares/authorize.middleware.js";
 
@@ -36,13 +36,14 @@ router.put(
     updateEvent
 );
 
-// Eliminar evento (solo admin)
+// Cambiar estado de un evento (solo organizer y admin)
 
-router.delete(
-    "/:id",
+router.patch(
+    "/:id/status",
     passport.authenticate("current", { session: false }),
-    authorize("admin"),
-    deleteEvent
+    authorize("organizer", "admin"),
+    changeEventStatus
 );
+
 
 export default router;
