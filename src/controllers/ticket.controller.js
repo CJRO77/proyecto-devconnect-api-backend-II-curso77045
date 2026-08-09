@@ -1,0 +1,78 @@
+import {
+    createTicketService,
+    getMyTicketsService,
+    getEventTicketsService,
+    cancelTicketService,
+} from "../services/tickets.service.js";
+
+export const createTicketController = async (req, res) => {
+    try {
+        const { eid } = req.params;
+        const { quantity } = req.body;
+
+        const ticket = await createTicketService(eid, quantity, req.user);
+        // 👆 orden correcto: eventId, quantity, currentUser
+
+        return res.status(201).json({
+            success: true,
+            message: "Inscripción confirmada",
+            data: ticket,
+        });
+    } catch (error) {
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Error al crear el ticket",
+        });
+    }
+};
+
+export const getMyTicketsController = async (req, res) => {
+    try {
+        const tickets = await getMyTicketsService(req.user.id);
+
+        return res.status(200).json({
+            success: true,
+            data: tickets,
+        });
+    } catch (error) {
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Error al obtener tus tickets",
+        });
+    }
+};
+
+export const getEventTicketsController = async (req, res) => {
+    try {
+        const { eid } = req.params;
+        const tickets = await getEventTicketsService(eid, req.user);
+
+        return res.status(200).json({
+            success: true,
+            data: tickets,
+        });
+    } catch (error) {
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Error al obtener las inscripciones",
+        });
+    }
+};
+
+export const cancelTicketController = async (req, res) => {
+    try {
+        const { tid } = req.params;
+        const ticket = await cancelTicketService(tid, req.user);
+
+        return res.status(200).json({
+            success: true,
+            message: "Inscripción cancelada",
+            data: ticket,
+        });
+    } catch (error) {
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Error al cancelar el ticket",
+        });
+    }
+};
