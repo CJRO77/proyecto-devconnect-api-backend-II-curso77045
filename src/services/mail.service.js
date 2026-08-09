@@ -1,5 +1,7 @@
 import { transporter } from "../config/mailer.config.js";
 
+// Función para enviar un correo de confirmación de ticket
+
 export const sendTicketConfirmationEmail = async ({
     to,
     userName,

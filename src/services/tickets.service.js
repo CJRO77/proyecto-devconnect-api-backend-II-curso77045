@@ -31,13 +31,13 @@ export const createTicketService = async (
     currentUser
 ) => {
 
-    // 0. Validar formato de eventId
+    // Validar formato de eventId
 
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
         throw new ServiceError("Evento no encontrado", 404);
     }
 
-    // 1. Buscar el evento
+    //  Buscar el evento
 
     const event = await getEventByIdRepository(eventId);
 
@@ -45,7 +45,7 @@ export const createTicketService = async (
         throw new ServiceError("Evento no encontrado", 404);
     }
 
-    // 2. Verificar que el evento esté publicado
+    // Verificar que el evento esté publicado
 
     if (event.status !== "published") {
         throw new ServiceError(
@@ -54,7 +54,7 @@ export const createTicketService = async (
         );
     }
 
-    // 3. Verificar que el evento no haya finalizado
+    // Verificar que el evento no haya finalizado
 
     if (event.date <= new Date()) {
         throw new ServiceError(
@@ -63,7 +63,7 @@ export const createTicketService = async (
         );
     }
 
-    // 4. Validar quantity
+    // Validar quantity
 
     const parsedQuantity = Number(quantity);
 
@@ -78,7 +78,7 @@ export const createTicketService = async (
         );
     }
 
-    // 5. Verificar inscripción activa duplicada
+    // Verificar inscripción activa duplicada
 
     const existingTicket = await getActiveTicketRepository(
         currentUser.id,
@@ -92,15 +92,15 @@ export const createTicketService = async (
         );
     }
 
-    // 6. Contar lugares ocupados
+    // Contar lugares ocupados
 
     const reservedSeats = await countReservedSeatsRepository(eventId);
 
-    // 7. Calcular lugares disponibles
+    // Calcular lugares disponibles
 
     const availableSeats = event.capacity - reservedSeats;
 
-    // 8. Verificar cupos
+    // Verificar cupos
 
     if (parsedQuantity > availableSeats) {
         throw new ServiceError(
@@ -109,11 +109,11 @@ export const createTicketService = async (
         );
     }
 
-    // 9. Generar código de reserva
+    // Generar código de reserva
 
     const reservationCode = generateReservationCode();
 
-    // 10. Crear ticket
+    //  Crear ticket
 
     let ticket;
 
@@ -137,7 +137,7 @@ export const createTicketService = async (
 
     const populatedTicket = await getTicketByIdRepository(ticket._id);
 
-    // 11. Enviar email de confirmación (no rompe la creación si falla)
+    // Enviar email de confirmación (no rompe la creación si falla)
 
     try {
         await sendTicketConfirmationEmail({
@@ -156,7 +156,7 @@ export const createTicketService = async (
     return populatedTicket;
 };
 
-// Mis tickets
+// Tickets de un usuario (dueño o admin)
 
 export const getMyTicketsService = async (userId) => {
     return await getMyTicketsRepository(userId);
@@ -169,13 +169,13 @@ export const getEventTicketsService = async (
     currentUser
 ) => {
 
-    // 1. Validar formato de eventId
+    // Validar formato de eventId
 
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
         throw new ServiceError("Evento no encontrado", 404);
     }
 
-    // 2. Buscar el evento
+    //  Buscar el evento
 
     const event = await getEventByIdRepository(eventId);
 
@@ -183,7 +183,7 @@ export const getEventTicketsService = async (
         throw new ServiceError("Evento no encontrado", 404);
     }
 
-    // 3. Verificar permisos: admin o dueño del evento
+    //  Verificar permisos: admin o dueño del evento
 
     const isAdmin = currentUser.role === "admin";
     const isOwner = event.organizer._id.toString() === currentUser.id;
@@ -195,7 +195,7 @@ export const getEventTicketsService = async (
         );
     }
 
-    // 4. Obtener tickets del evento
+    // Obtener tickets del evento
 
     return await getEventTicketsRepository(eventId);
 };
@@ -207,13 +207,13 @@ export const cancelTicketService = async (
     currentUser
 ) => {
 
-    // 1. Validar formato de ticketId
+    // Validar formato de ticketId
 
     if (!mongoose.Types.ObjectId.isValid(ticketId)) {
         throw new ServiceError("Ticket no encontrado", 404);
     }
 
-    // 2. Buscar el ticket
+    // Buscar el ticket
 
     const ticket = await getTicketByIdRepository(ticketId);
 
@@ -221,7 +221,7 @@ export const cancelTicketService = async (
         throw new ServiceError("Ticket no encontrado", 404);
     }
 
-    // 3. Verificar permisos: admin o dueño del ticket
+    // Verificar permisos: admin o dueño del ticket
 
     const isAdmin = currentUser.role === "admin";
     const isOwner = ticket.user._id.toString() === currentUser.id;
@@ -233,13 +233,13 @@ export const cancelTicketService = async (
         );
     }
 
-    // 4. Verificar que no esté ya cancelado
+    // Verificar que no esté ya cancelado
 
     if (ticket.status === "cancelled") {
         throw new ServiceError("El ticket ya está cancelado", 409);
     }
 
-    // 5. Cancelar
+    // Cancelar
 
     return await cancelTicketRepository(ticketId);
 };

@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import passport from "passport";
 import initializePassport from "./config/passport.config.js";
 
+// Configuración de la aplicación
+
 const app = express();
 
 app.use(express.json());

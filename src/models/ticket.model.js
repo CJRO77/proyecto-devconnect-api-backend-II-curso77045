@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+// Modelo de Ticket
+
 const ticketSchema = new mongoose.Schema(
     {
         user: {

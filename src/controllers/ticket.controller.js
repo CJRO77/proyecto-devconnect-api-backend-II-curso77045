@@ -5,13 +5,15 @@ import {
     cancelTicketService,
 } from "../services/tickets.service.js";
 
+// Controladores de tickets
+
 export const createTicketController = async (req, res) => {
     try {
         const { eid } = req.params;
         const { quantity } = req.body;
 
         const ticket = await createTicketService(eid, quantity, req.user);
-        // 👆 orden correcto: eventId, quantity, currentUser
+
 
         return res.status(201).json({
             success: true,

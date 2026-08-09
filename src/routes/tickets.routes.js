@@ -9,6 +9,8 @@ import {
 
 const router = Router();
 
+// Rutas de tickets
+
 router.post("/events/:eid/tickets", authMiddleware, createTicketController);
 router.get("/tickets/my-tickets", authMiddleware, getMyTicketsController);
 router.get("/events/:eid/tickets", authMiddleware, getEventTicketsController);
