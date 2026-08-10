@@ -2,7 +2,10 @@ import { createHash, isValidPassword } from "../utils/bcrypt.js";
 import {
     findUserByEmail,
     createUserRepository,
-    findUserById
+    findUserById,
+    getAllUsersRepository,
+    updateUserRepository,
+    deleteUserRepository,
 } from "../repositories/users.repository.js";
 
   export const createUserService = async (userData) => {
@@ -85,6 +88,50 @@ export const loginUserService = async (email, password) => {
 export const currentUserService = async (id) => {
 
     const user = await findUserById(id);
+
+    if (!user) {
+        throw new Error("Usuario no encontrado");
+    }
+
+    return user;
+
+};
+
+export const getAllUsersService = async () => {
+    return await getAllUsersRepository();
+};
+
+export const getUserByIdService = async (id) => {
+
+    const user = await findUserById(id);
+
+    if (!user) {
+        throw new Error("Usuario no encontrado");
+    }
+
+    return user;
+
+};
+
+export const updateUserService = async (id, userData) => {
+
+    // Evitar que se actualicen campos sensibles desde este endpoint
+
+    const { password, role, ...safeData } = userData;
+
+    const user = await updateUserRepository(id, safeData);
+
+    if (!user) {
+        throw new Error("Usuario no encontrado");
+    }
+
+    return user;
+
+};
+
+export const deleteUserService = async (id) => {
+
+    const user = await deleteUserRepository(id);
 
     if (!user) {
         throw new Error("Usuario no encontrado");

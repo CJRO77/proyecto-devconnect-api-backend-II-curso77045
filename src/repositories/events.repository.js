@@ -1,9 +1,9 @@
-import EventModel from "../models/event.model.js";
+import { EventDAO } from "../dao/event.dao.js";
 
 // Crear un evento
 
 export const createEventRepository = async (eventData) => {
-    return await EventModel.create(eventData);
+    return await EventDAO.create(eventData);
 };
 
 // Obtener todos los eventos
@@ -21,19 +21,16 @@ export const getEventsRepository = async (
 
     // Obtener el total de documentos que cumplen los filtros
 
-    const total = await EventModel.countDocuments(query);
+    const total = await EventDAO.count(query);
 
     // Obtener los eventos
 
-    const events = await EventModel.find(query)
-        .populate(
-            "organizer",
-            "firstname lastname email role"
-        )
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit)
-        .lean();
+    const events = await EventDAO.find(query, {
+
+        skip,
+        limit,
+        sort: sortOptions,
+    });
 
     return {
         data: events,
@@ -48,40 +45,19 @@ export const getEventsRepository = async (
 // Obtener un evento por ID
 
 export const getEventByIdRepository = async (id) => {
-    return await EventModel.findById(id).populate(
-        "organizer",
-        "firstname lastname email role"
-    );
+    return await EventDAO.findById(id);
 };
 
 // Actualizar un evento
 
 export const updateEventRepository = async (id, eventData) => {
-    return await EventModel.findByIdAndUpdate(
-        id,
-        eventData,
-        {
-            new: true,
-            runValidators: true,
-        }
-    );
+    return await EventDAO.updateById(id, eventData);
 };
-
 
 // Cambiar el estado de un evento
 
-export const changeEventStatusRepository = async (
-    id,
-    status
-) => {
+export const changeEventStatusRepository = async (id, status) => {
 
- return await EventModel.findByIdAndUpdate(
-    id,
-    { status },
-    {
-        new: true,
-        runValidators: true,
-    }
-);
+    return await EventDAO.updateById(id, {status});
 
 };

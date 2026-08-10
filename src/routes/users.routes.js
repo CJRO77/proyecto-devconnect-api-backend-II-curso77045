@@ -18,7 +18,7 @@ const router = Router();
 router.get(
     "/",
     passport.authenticate("current", { session: false }),
-    authorize(["admin"]),
+    authorize("admin"),
     getUsers
 );
 
