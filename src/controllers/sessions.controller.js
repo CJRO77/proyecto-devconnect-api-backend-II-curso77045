@@ -1,4 +1,5 @@
 import { generateToken } from "../utils/jwt.js";
+import { userDTO } from "../dto/user.dto.js";
 
 export const login = async (req, res) => {
 
@@ -18,6 +19,7 @@ export const login = async (req, res) => {
         return res.status(200).json({
             status: "success",
             message: "Login correcto",
+            data: userDTO(user),
         });
 
     } catch (error) {
@@ -32,28 +34,23 @@ export const login = async (req, res) => {
 
 };
 
-
 export const logout = (req, res) => {
 
-  res.clearCookie("currentUser");
+    res.clearCookie("currentUser");
 
-  res.status(200).json({
-    status: "success",
-    message: "Sesión cerrada correctamente",
-  });
+    res.status(200).json({
+        status: "success",
+        message: "Sesión cerrada correctamente",
+    });
 
 };
 
 export const current = (req, res) => {
 
-    //eliminar password antes de enviar la respuesta
-
-    const { password, ...userWithoutPassword } = req.user.toObject();
-
     res.status(200).json({
         status: "success",
         message: "Usuario autenticado",
-        data: userWithoutPassword
+        data: userDTO(req.user),
     });
 
 };
@@ -73,12 +70,10 @@ export const register = (req, res) => {
             maxAge: 60 * 60 * 1000,
         });
 
-        const { password, ...userWithoutPassword } = user.toObject();
-
         return res.status(201).json({
             status: "success",
             message: "Usuario registrado correctamente",
-            data: userWithoutPassword,
+            data: userDTO(user),
         });
 
     } catch (error) {

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "../middlewares/auth.middleware.js";
+import passport from "passport";
 import {
     createTicketController,
     getMyTicketsController,
@@ -9,11 +9,11 @@ import {
 
 const router = Router();
 
-// Rutas de tickets
+const auth = passport.authenticate("current", { session: false });
 
-router.post("/events/:eid/tickets", authMiddleware, createTicketController);
-router.get("/tickets/my-tickets", authMiddleware, getMyTicketsController);
-router.get("/events/:eid/tickets", authMiddleware, getEventTicketsController);
-router.patch("/tickets/:tid/cancel", authMiddleware, cancelTicketController);
+router.post("/events/:eid/tickets", auth, createTicketController);
+router.get("/tickets/my-tickets", auth, getMyTicketsController);
+router.get("/events/:eid/tickets", auth, getEventTicketsController);
+router.patch("/tickets/:tid/cancel", auth, cancelTicketController);
 
 export default router;

@@ -5,6 +5,7 @@ import {
     updateEventService,
     changeEventStatusService,
 } from "../services/events.service.js";
+import { eventDTO, eventListDTO } from "../dto/event.dto.js";
 
 // Obtener todos los eventos
 
@@ -12,11 +13,14 @@ export const getEvents = async (req, res) => {
 
     try {
 
-        const events = await getEventsService(req.query);
+        const result = await getEventsService(req.query);
 
         return res.status(200).json({
             status: "success",
-            payload: events,
+            payload: {
+                ...result,
+                data: eventListDTO(result.data),
+            },
         });
 
     } catch (error) {
@@ -44,7 +48,7 @@ export const createEvent = async (req, res) => {
         return res.status(201).json({
             status: "success",
             message: "Evento creado correctamente",
-            payload: event,
+            payload: eventDTO(event),
         });
 
     } catch (error) {
@@ -68,7 +72,7 @@ export const getEventById = async (req, res) => {
 
         return res.status(200).json({
             status: "success",
-            payload: event,
+            payload: eventDTO(event),
         });
 
     } catch (error) {
@@ -97,7 +101,7 @@ export const updateEvent = async (req, res) => {
         return res.status(200).json({
             status: "success",
             message: "Evento actualizado correctamente",
-            payload: event,
+            payload: eventDTO(event),
         });
 
     } catch (error) {
@@ -120,7 +124,6 @@ export const updateEvent = async (req, res) => {
 
 };
 
-
 // Cambiar estado
 
 export const changeEventStatus = async (req, res) => {
@@ -138,28 +141,25 @@ export const changeEventStatus = async (req, res) => {
         return res.status(200).json({
             status: "success",
             message: "Estado del evento actualizado correctamente",
-            payload: event,
+            payload: eventDTO(event),
         });
 
-    } 
-    
-    
- catch (error) {
+    } catch (error) {
 
-    if (error.message === "Evento no encontrado") {
+        if (error.message === "Evento no encontrado") {
 
-        return res.status(404).json({
+            return res.status(404).json({
+                status: "error",
+                message: error.message,
+            });
+
+        }
+
+        return res.status(400).json({
             status: "error",
             message: error.message,
         });
 
     }
 
-    return res.status(400).json({
-        status: "error",
-        message: error.message,
-    });
-
-}
-
-}
+};

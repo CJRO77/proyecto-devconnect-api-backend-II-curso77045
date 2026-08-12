@@ -4,8 +4,7 @@ import {
     getEventTicketsService,
     cancelTicketService,
 } from "../services/tickets.service.js";
-
-// Controladores de tickets
+import { ticketDTO, ticketListDTO } from "../dto/ticket.dto.js";
 
 export const createTicketController = async (req, res) => {
     try {
@@ -14,11 +13,10 @@ export const createTicketController = async (req, res) => {
 
         const ticket = await createTicketService(eid, quantity, req.user);
 
-
         return res.status(201).json({
             success: true,
             message: "Inscripción confirmada",
-            data: ticket,
+            data: ticketDTO(ticket),
         });
     } catch (error) {
         return res.status(error.statusCode || 500).json({
@@ -30,11 +28,11 @@ export const createTicketController = async (req, res) => {
 
 export const getMyTicketsController = async (req, res) => {
     try {
-        const tickets = await getMyTicketsService(req.user.id);
+        const tickets = await getMyTicketsService(req.user);
 
         return res.status(200).json({
             success: true,
-            data: tickets,
+            data: ticketListDTO(tickets),
         });
     } catch (error) {
         return res.status(error.statusCode || 500).json({
@@ -51,7 +49,7 @@ export const getEventTicketsController = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            data: tickets,
+            data: ticketListDTO(tickets),
         });
     } catch (error) {
         return res.status(error.statusCode || 500).json({
@@ -69,7 +67,7 @@ export const cancelTicketController = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Inscripción cancelada",
-            data: ticket,
+            data: ticketDTO(ticket),
         });
     } catch (error) {
         return res.status(error.statusCode || 500).json({
