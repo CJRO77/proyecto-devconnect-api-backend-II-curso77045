@@ -5,6 +5,7 @@ import {
     updateUserService,
     deleteUserService,
 } from "../services/users.service.js";
+import { userDTO } from "../dto/user.dto.js";
 
 // Obtener todos los usuarios
 
@@ -13,22 +14,16 @@ export const getUsers = async (req, res) => {
 
         const users = await getAllUsersService();
 
-        const usersWithoutPassword = users.map((user) => {
-            const { password, ...userWithoutPassword } = user.toObject();
-            return userWithoutPassword;
-        });
-
         res.status(200).json({
             success: true,
             message: "Usuarios obtenidos correctamente",
-            data: usersWithoutPassword,
+            data: users.map(userDTO),
         });
 
     } catch (error) {
-        res.status(500).json({
+        res.status(error.statusCode || 500).json({
             success: false,
-            message: "Error al obtener los usuarios",
-            error: error.message,
+            message: error.message || "Error al obtener los usuarios",
         });
     }
 };
@@ -38,16 +33,14 @@ export const createUser = async (req, res) => {
 
         const user = await createUserService(req.body);
 
-        const { password, ...userWithoutPassword } = user.toObject();
-
         res.status(201).json({
             success: true,
             message: "Usuario creado correctamente",
-            data: userWithoutPassword,
+            data: userDTO(user),
         });
 
     } catch (error) {
-        res.status(400).json({
+        res.status(error.statusCode || 500).json({
             success: false,
             message: error.message,
         });
@@ -61,26 +54,15 @@ export const getUserById = async (req, res) => {
 
         const user = await getUserByIdService(req.params.id);
 
-        const { password, ...userWithoutPassword } = user.toObject();
-
         res.status(200).json({
             success: true,
-            data: userWithoutPassword,
+            data: userDTO(user),
         });
 
     } catch (error) {
-
-        if (error.message === "Usuario no encontrado") {
-            return res.status(404).json({
-                success: false,
-                message: error.message,
-            });
-        }
-
-        res.status(500).json({
+        res.status(error.statusCode || 500).json({
             success: false,
-            message: "Error al obtener usuario",
-            error: error.message,
+            message: error.message || "Error al obtener usuario",
         });
     }
 };
@@ -92,27 +74,16 @@ export const updateUser = async (req, res) => {
 
         const user = await updateUserService(req.params.id, req.body);
 
-        const { password, ...userWithoutPassword } = user.toObject();
-
         res.status(200).json({
             success: true,
             message: "Usuario actualizado correctamente",
-            data: userWithoutPassword,
+            data: userDTO(user),
         });
 
     } catch (error) {
-
-        if (error.message === "Usuario no encontrado") {
-            return res.status(404).json({
-                success: false,
-                message: error.message,
-            });
-        }
-
-        res.status(500).json({
+        res.status(error.statusCode || 500).json({
             success: false,
-            message: "Error al actualizar usuario",
-            error: error.message,
+            message: error.message || "Error al actualizar usuario",
         });
     }
 };
@@ -124,27 +95,16 @@ export const deleteUser = async (req, res) => {
 
         const user = await deleteUserService(req.params.id);
 
-        const { password, ...userWithoutPassword } = user.toObject();
-
         res.status(200).json({
             success: true,
             message: "Usuario eliminado correctamente",
-            data: userWithoutPassword,
+            data: userDTO(user),
         });
 
     } catch (error) {
-
-        if (error.message === "Usuario no encontrado") {
-            return res.status(404).json({
-                success: false,
-                message: error.message,
-            });
-        }
-
-        res.status(500).json({
+        res.status(error.statusCode || 500).json({
             success: false,
-            message: "Error al eliminar usuario",
-            error: error.message,
+            message: error.message || "Error al eliminar usuario",
         });
     }
 };

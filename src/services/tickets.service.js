@@ -16,12 +16,12 @@ import {
 import { generateReservationCode } from "../utils/generateReservationCode.js";
 import { sendTicketConfirmationEmail } from "./mail.service.js";
 
-class ServiceError extends Error {
-    constructor(message, statusCode) {
-        super(message);
-        this.statusCode = statusCode;
-    }
-}
+import { ServiceError } from "../utils/ServiceError.js";
+
+
+// Servicio de tickets
+
+
 
 export const createTicketService = async (
     eventId,
@@ -128,6 +128,7 @@ export const createTicketService = async (
 
     return populatedTicket;
 };
+
 
 export const getMyTicketsService = async (currentUser) => {
     return await getMyTicketsRepository(currentUser._id);

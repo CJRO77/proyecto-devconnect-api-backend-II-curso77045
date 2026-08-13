@@ -11,32 +11,37 @@ import {
 
 import { authorize } from "../middlewares/authorize.middleware.js";
 
+// Rutas para usuarios
+
 const router = Router();
 
-// Obtener todos los usuarios (Solo Admin)
+const auth = passport.authenticate("current", { session: false });
 
-router.get(
-    "/",
-    passport.authenticate("current", { session: false }),
-    authorize("admin"),
-    getUsers
-);
+// obtener todos los usuarios (Solo Admin)
 
-// Obtener usuario por ID
 
-router.get("/:id", getUserById);
+router.get("/", auth, authorize("admin"), getUsers);
 
-// Crear usuario
 
-router.post("/", createUser);
+// Obtener usuario por ID (cualquier usuario autenticado)
 
-// Actualizar usuario
+router.get("/:id", auth, getUserById);
 
-router.put("/:id", updateUser);
 
-// Eliminar usuario
+// Crear usuario (Solo Admin)
 
-router.delete("/:id", deleteUser);
+router.post("/", auth, authorize("admin"), createUser);
+
+
+// Actualizar usuario (Solo Admin)
+
+router.put("/:id", auth, authorize("admin"), updateUser);
+
+
+// Eliminar usuario (Solo Admin)
+
+
+router.delete("/:id", auth, authorize("admin"), deleteUser);
 
 
 export default router;

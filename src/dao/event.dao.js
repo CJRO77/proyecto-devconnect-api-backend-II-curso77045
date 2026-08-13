@@ -1,5 +1,7 @@
 import EventModel from "../models/event.model.js";
 
+// Data Access Object (DAO) para eventos
+
 export const EventDAO = {
 
     create: async (data) => {

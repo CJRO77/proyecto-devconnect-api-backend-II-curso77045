@@ -1,5 +1,7 @@
 import { UserDAO } from "../dao/user.dao.js";
 
+// Repositorio de usuarios
+
 export const findUserByEmail = async (email) => {
     return await UserDAO.findOne({ email });
 };

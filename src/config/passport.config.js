@@ -41,6 +41,7 @@ const initializePassport = () => {
 
                     return done(null, false, {
                         message: error.message,
+                        status: error.statusCode,
                     });
 
                 }
@@ -71,6 +72,7 @@ const initializePassport = () => {
 
                     return done(null, false, {
                         message: error.message,
+                        statusCode: error.statusCode,
                     });
 
                 }

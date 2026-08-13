@@ -1,6 +1,8 @@
 import TicketModel from "../models/ticket.model.js";
 import mongoose from "mongoose";
 
+// Data Access Object (DAO) para tickets
+
 export const TicketDAO = {
 
     create: async (data) => {

@@ -8,40 +8,22 @@ import {
     register
 } from "../controllers/sessions.controller.js";
 
-import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { authenticateLocal } from "../middlewares/localAuth.middleware.js";
 
+// Rutas para sesiones
 
 const router = Router();
 
+router.post("/register", authenticateLocal("register"), register);
 
-router.post(
-    "/register",
-    passport.authenticate("register", {
-        session: false
-    }),
-    register
-);
-
-
-router.post(
-    "/login",
-    passport.authenticate("login", {
-        session: false
-    }),
-    login
-);
-
+router.post("/login", authenticateLocal("login"), login);
 
 router.post("/logout", logout);
-
 
 router.get(
     "/current",
     passport.authenticate("current", { session: false }),
     current
 );
-
-
-
 
 export default router;

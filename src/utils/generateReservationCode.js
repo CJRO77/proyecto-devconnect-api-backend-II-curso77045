@@ -1,3 +1,5 @@
+// Función para generar un código de reserva único
+
 export const generateReservationCode = () => {
 
     const random = Math.random()

@@ -7,6 +7,8 @@ import {
     cancelTicketController,
 } from "../controllers/ticket.controller.js";
 
+// Rutas para tickets
+
 const router = Router();
 
 const auth = passport.authenticate("current", { session: false });

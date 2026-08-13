@@ -1,5 +1,7 @@
 import UserModel from "../models/user.model.js";
 
+// Data Access Object (DAO) para usuarios
+
 export const UserDAO = {
 
     findOne: async (filter) => {

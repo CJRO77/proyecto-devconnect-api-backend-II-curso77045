@@ -41,10 +41,12 @@ Nodemailer
 - Logout
 - Emisión de JWT
 - Manejo de sesión mediante cookies HttpOnly
-- Arquitectura por capas (Controller → Service → Repository)
+- Arquitectura en capas (Controller → Service → Repository → DAO → Model)
+- DTOs para controlar los datos expuestos en cada respuesta (ningún endpoint expone password)
+- Manejo de errores centralizado mediante clase ServiceError con código HTTP explícito
 - Protección de rutas privadas
 - Control de acceso mediante roles
-- Autenticación basada en cookies HttpOnly
+- Autenticación basada en cookies HttpOnly (Passport + JWT)
 - Inscripción de usuarios a eventos (tickets)
 - Control de cupos disponibles
 - Cancelación de inscripciones
@@ -57,20 +59,66 @@ Nodemailer
   El proyecto sigue una arquitectura por capas para mantener una correcta separación de responsabilidades.
 
   Controllers
-      ↓
+    ↓
   Services
-      ↓
+    ↓
   Repositories
-      ↓
-   Models
-      ↓
-   MongoDB
+    ↓
+  DAO
+    ↓
+  Models
+    ↓
+  MongoDB
 
-   Responsabilidad de cada capa
-   Controllers: reciben las peticiones HTTP y construyen las respuestas.
-   Services: contienen la lógica de negocio.
-   Repositories: realizan las operaciones sobre la base de datos.
-   Models: definen la estructura de los documentos de MongoDB mediante Mongoose.
+# Responsabilidad de cada capa
+
+Capa /Responsabilidad
+
+**Controllers**
+Reciben la petición HTTP, extraen body/params/query, llaman al service correspondiente y devuelven la respuesta. No contienen lógica de negocio ni importan modelos de Mongoose.
+
+**Services**
+Concentran toda la lógica de negocio: validaciones, permisos sobre recursos propios, cálculo de cupos, envío de emails, reglas de estado. Nunca importan modelos ni DAOs directamente: siempre pasan por el Repository. Lanzan errores mediante la clase ServiceError, que incluye el código HTTP correspondiente.
+
+**Repositories**
+Capa intermedia orientada al dominio. Exponen métodos con nombre de negocio (findUserByEmail, getActiveTicketRepository, countReservedSeatsRepository, etc.) y delegan el acceso a datos al DAO correspondiente. No importan modelos de Mongoose directamente.
+
+**DAO**	
+Única capa que importa los modelos de Mongoose. Expone operaciones genéricas de acceso a datos (findById, findOne, create, updateById, count, etc.). Un DAO por entidad: UserDAO, EventDAO, TicketDAO.
+
+**DTO**
+Funciones puras que transforman un documento (o resultado .lean()) en el objeto exacto que se expone en la respuesta HTTP, filtrando campos sensibles. Existen userDTO, eventDTO y ticketDTO. Ninguna respuesta de la API expone el campo password, ni siquiera hasheado. Cuando un documento viene con populate (por ejemplo el organizer de un evento, o el user/event de un ticket), el DTO también filtra esos datos relacionados con su propio DTO.
+
+**Models**
+Definen la estructura de los documentos de MongoDB mediante Mongoose (schemas, validaciones a nivel de base, índices).
+
+# Por qué esta separación
+
+Antes de esta refactorización, los repositories accedían directamente a los modelos de Mongoose, y algunos controllers hacían lo mismo. Esto acoplaba la lógica de negocio y de presentación al motor de base de datos concreto (Mongoose), y hacía fácil olvidarse de filtrar campos sensibles en alguna respuesta (de hecho, así se detectó y corrigió un caso real: 3 de los 5 endpoints de usuarios exponían el password hasheado antes de este refactor).
+
+# Con la arquitectura actual:
+
+Si mañana se cambia el motor de base de datos, solo se reescribe la capa DAO.
+Si se necesita una nueva regla de negocio, se agrega en el Service, sin tocar cómo se accede a los datos.
+Es imposible que una respuesta exponga password por accidente, porque el DTO nunca copia ese campo al objeto de salida — no se trata de "borrarlo", sino de que nunca se incluye.
+
+🚨Manejo de errores
+
+Todos los services lanzan una clase de error propia, ServiceError (src/utils/ServiceError.js), que extiende de Error e incluye un statusCode explícito.
+
+Criterio de códigos HTTP usado en toda la API:
+
+Código	Cuándo se usa
+400	Datos inválidos (campos faltantes, formato incorrecto, valores fuera de rango)
+401	No autenticado (sin sesión, token inválido, credenciales incorrectas en login)
+403	Autenticado pero sin permisos sobre el recurso (no es dueño ni admin)
+404	Recurso no encontrado, o id con formato inválido
+409	Conflicto de negocio con el estado actual del recurso (email duplicado, evento cancelado, sin cupos, inscripción duplicada)
+500	Error interno no esperado
+
+# Caso particular: login y registro (Passport)
+
+Las rutas POST /sessions/login y POST /sessions/register usan estrategias passport-local. Por defecto, Passport responde siempre 401 ante cualquier fallo de autenticación, sin distinguir "credenciales incorrectas" de "email ya registrado". Para respetar el criterio de códigos HTTP de la tabla anterior, se armó un middleware propio (src/middlewares/localAuth.middleware.js) que ejecuta la estrategia de Passport con un callback manual, lee el statusCode que el service adjunta al error, y responde con el código correcto (por ejemplo 409 si el email ya está registrado, en vez de un 401 genérico).
 
 
 🔐 **Autenticación**
@@ -78,9 +126,9 @@ Nodemailer
 
 *Estrategia*	                *Tipo*               	             *Descripción*
 
--register	               -passport-local	         -Registra un nuevo usuario validando sus datos y encriptando la contraseña.
+-register	                -passport-local	         -Registra un nuevo usuario validando sus datos y encriptando la contraseña.
 -login	                   -passport-local	         -Valida las credenciales del usuario.
--current	               -passport-jwt	         -Obtiene el usuario autenticado desde el JWT almacenado en la cookie.
+-current	                   -passport-jwt	            -Obtiene el usuario autenticado desde el JWT almacenado en la cookie.
 
 📡 **Rutas de sesión**
 
@@ -159,12 +207,21 @@ PATCH  /api/v1/events/:id/status
 🔒 **Permisos de acceso**
 
 
-Endpoint	                   User	          Organizer	              Admin
+Endpoint	                   User	          Organizer	             Admin
 GET /events	                   ✅	            ✅	                ✅
 POST /events                   ❌	            ✅	                ✅
-PUT /events/ :id               ❌	            ✅ (solo propios)	✅
-PATCH /events/:id/status	   ❌	            ✅ (solo propios)    ✅
+PUT /events/ :id               ❌	            ✅ (solo propios)	 ✅
+PATCH /events/:id/status	    ❌	            ✅ (solo propios)   ✅
 GET /users	                   ❌	            ❌	                ✅
+GET /users/:id	                ✅	            ✅	                ✅
+POST /users	                   ❌	            ❌	                ✅
+PUT /users/:id	                ❌	            ❌	                ✅
+DELETE /users/:id	             ❌	            ❌	                ✅
+POST /events/:eid/tickets	    ✅	            ✅	                ✅
+GET /tickets/my-tickets	       ✅	            ✅	                ✅
+GET /events/:eid/tickets	    ❌	            ✅ (solo propios)	 ✅
+PATCH /tickets/:tid/cancel	    ✅ (propios)	✅ (propios)	       ✅ (cualquiera)
+
 
 
 🔑 **Variables de entorno**
@@ -192,20 +249,33 @@ con la verificación en 2 pasos activada), no la contraseña normal de la cuenta
 
 src/
 ├── config/
-│   ├── passport.config.js    # estrategias register, login y current
-│   └── mailer.config.js      # transporter de Nodemailer
-├── controllers/
+│   ├── passport.config.js       # estrategias register, login y current
+│   └── mailer.config.js         # transporter de Nodemailer
+├── controllers/                 # Solo request/response, sin lógica de negocio
+├── dao/                         # Única capa que importa modelos de Mongoose
+│   ├── user.dao.js
+│   ├── event.dao.js
+│   └── ticket.dao.js
+├── dto/                         # Filtran los datos expuestos en cada respuesta
+│   ├── user.dto.js
+│   ├── event.dto.js
+│   └── ticket.dto.js
+├── middlewares/
+│   ├── authorize.middleware.js  # autorización por rol
+│   └── localAuth.middleware.js  # login/register con status codes reales
 ├── models/
-├── repositories/
+├── repositories/                # Capa de dominio, usan el DAO
 ├── routes/
-├── services/
-│   └── mail.service.js       # envío de emails de confirmación
+├── services/                    # Lógica de negocio, usan el Repository
+│   └── mail.service.js          # envío de emails de confirmación
 ├── utils/
 │   ├── bcrypt.js
 │   ├── jwt.js
-│   └── generateReservationCode.js
-├── app.js                    # passport.initialize()
+│   ├── generateReservationCode.js
+│   └── ServiceError.js          # clase de error con statusCode
+├── app.js                       # passport.initialize()
 └── server.js
+
 
 ⚙️ **Instalación**
 
@@ -249,6 +319,10 @@ http://localhost:3000/api/v1
 - Intento de cancelar un ticket ajeno.
 - Consulta de inscriptos de un evento como usuario común.
 - Consulta de inscriptos de un evento como organizer de otro evento.
+- Respuesta de ticket con populate sin exponer password del usuario.
+- Endpoints de error devolviendo el código HTTP correcto (400/401/403/404/409), no 500 genérico.
+- Registro con email duplicado → 409 (en vez del 401 genérico por defecto de Passport).
+- Rutas de usuarios sin sesión → 401; con sesión pero sin rol admin → 403.
 
 ## 🎟 Gestión de Eventos
 
@@ -273,13 +347,13 @@ La API permite que un usuario autenticado se inscriba a un evento publicado, con
 Representa la relación entre un usuario y un evento (solo referencias, sin datos embebidos):
 
 ## Campo	                               Tipo                                          Descripción
-   user	                                 ObjectId	                             Referencia al usuario que se inscribió
-   event	                             ObjectId	                             Referencia al evento
-   quantity	                             Number	                                 Cantidad de lugares reservados (mínimo 1)
-   status	                             String	                                 pending | confirmed | cancelled
-   reservationCode	                     String	                                 Código único de reserva (ej. TCK-8F3A2X)
-   cancelledAt	                         Date	                                 Fecha de cancelación (null si sigue activo)
-   createdAt	                         Date	                                 Fecha de creación (automático)
+   user	                             ObjectId	                              Referencia al usuario que se inscribió
+   event	                             ObjectId	                              Referencia al evento
+   quantity	                          Number	                                 Cantidad de lugares reservados (mínimo 1)
+   status	                          String	                                 pending | confirmed | cancelled
+   reservationCode	                 String	                                 Código único de reserva (ej. TCK-8F3A2X)
+   cancelledAt	                       Date	                                 Fecha de cancelación (null si sigue activo)
+   createdAt	                       Date	                                 Fecha de creación (automático)
 
 **Estados del ticket**
 
@@ -307,11 +381,11 @@ Los cupos ocupados se calculan sumando el campo quantity de todos los tickets ac
 por lo que cancelar un ticket libera el cupo automáticamente para nuevas inscripciones.
 
 **Endpoints**
-## Método	                     Ruta	           Acceso	                                       Descripción
-POST	     /api/v1/events/:eid/tickets      	 Autenticado	                                 Inscribirse a un evento
-GET	         /api/v1/tickets/my-tickets          Autenticado	                                 Ver mis inscripciones
-GET	         /api/v1/events/:eid/tickets	     Organizer (dueño del evento) o Admin	         Ver inscriptos a un evento
-PATCH	     /api/v1/tickets/:tid/cancel	     Dueño del ticket o Admin	                     Cancelar una inscripción
+## Método	               Ruta	                     Acceso	                                       Descripción
+POST	         /api/v1/events/:eid/tickets      	 Autenticado	                                 Inscribirse a un evento
+GET	         /api/v1/tickets/my-tickets           Autenticado	                                 Ver mis inscripciones
+GET	         /api/v1/events/:eid/tickets	       Organizer (dueño del evento) o Admin	         Ver inscriptos a un evento
+PATCH	         /api/v1/tickets/:tid/cancel	       Dueño del ticket o Admin	                     Cancelar una inscripción
 
 **Cancelación**
 -Cambia status a cancelled y registra cancelledAt. El documento no se elimina.

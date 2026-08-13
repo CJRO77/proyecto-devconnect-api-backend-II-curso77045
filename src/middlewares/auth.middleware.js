@@ -1,5 +1,7 @@
 import { verifyToken } from "../utils/jwt.js";
 
+// Middleware de autenticación
+
 export const authMiddleware = (req, res, next) => {
 
     try {

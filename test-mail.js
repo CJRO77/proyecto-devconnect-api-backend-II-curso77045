@@ -1,6 +1,8 @@
 import "dotenv/config";
 import { sendTicketConfirmationEmail } from "./src/services/mail.service.js";
 
+// Prueba de envío de correo electrónico
+
 try {
 
     await sendTicketConfirmationEmail({

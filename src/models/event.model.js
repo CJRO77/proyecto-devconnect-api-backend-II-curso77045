@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+// Modelo de datos para eventos
+
 const eventSchema = new mongoose.Schema(
     {
         title: {

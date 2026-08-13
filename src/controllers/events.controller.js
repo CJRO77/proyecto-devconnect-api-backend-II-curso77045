@@ -25,7 +25,7 @@ export const getEvents = async (req, res) => {
 
     } catch (error) {
 
-        return res.status(500).json({
+        return res.status(error.statusCode || 500).json({
             status: "error",
             message: error.message,
         });
@@ -40,10 +40,7 @@ export const createEvent = async (req, res) => {
 
     try {
 
-        const event = await createEventService(
-            req.body,
-            req.user
-        );
+        const event = await createEventService(req.body, req.user);
 
         return res.status(201).json({
             status: "success",
@@ -53,7 +50,7 @@ export const createEvent = async (req, res) => {
 
     } catch (error) {
 
-        return res.status(400).json({
+        return res.status(error.statusCode || 500).json({
             status: "error",
             message: error.message,
         });
@@ -77,7 +74,7 @@ export const getEventById = async (req, res) => {
 
     } catch (error) {
 
-        return res.status(404).json({
+        return res.status(error.statusCode || 500).json({
             status: "error",
             message: error.message,
         });
@@ -106,16 +103,7 @@ export const updateEvent = async (req, res) => {
 
     } catch (error) {
 
-        if (error.message === "Evento no encontrado") {
-
-            return res.status(404).json({
-                status: "error",
-                message: error.message,
-            });
-
-        }
-
-        return res.status(400).json({
+        return res.status(error.statusCode || 500).json({
             status: "error",
             message: error.message,
         });
@@ -146,16 +134,7 @@ export const changeEventStatus = async (req, res) => {
 
     } catch (error) {
 
-        if (error.message === "Evento no encontrado") {
-
-            return res.status(404).json({
-                status: "error",
-                message: error.message,
-            });
-
-        }
-
-        return res.status(400).json({
+        return res.status(error.statusCode || 500).json({
             status: "error",
             message: error.message,
         });

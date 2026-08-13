@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+// Conexión a la base de datos MongoDB
+
 export const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);

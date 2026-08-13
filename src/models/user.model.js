@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+// Modelo de datos para usuarios
+
 
 const userSchema = new mongoose.Schema(
   {

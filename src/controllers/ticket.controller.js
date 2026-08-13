@@ -6,6 +6,8 @@ import {
 } from "../services/tickets.service.js";
 import { ticketDTO, ticketListDTO } from "../dto/ticket.dto.js";
 
+// Controlador de tickets
+
 export const createTicketController = async (req, res) => {
     try {
         const { eid } = req.params;

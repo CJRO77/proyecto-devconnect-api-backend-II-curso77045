@@ -1,6 +1,8 @@
 import { generateToken } from "../utils/jwt.js";
 import { userDTO } from "../dto/user.dto.js";
 
+// Controlador de sesiones
+
 export const login = async (req, res) => {
 
     try {
@@ -24,10 +26,9 @@ export const login = async (req, res) => {
 
     } catch (error) {
 
-        return res.status(500).json({
+        return res.status(error.statusCode || 500).json({
             status: "error",
-            message: "Error interno del servidor",
-            error: error.message,
+            message: error.message || "Error interno del servidor",
         });
 
     }
@@ -78,10 +79,9 @@ export const register = (req, res) => {
 
     } catch (error) {
 
-        return res.status(500).json({
+        return res.status(error.statusCode || 500).json({
             status: "error",
-            message: "Error interno del servidor",
-            error: error.message,
+            message: error.message || "Error interno del servidor",
         });
 
     }
