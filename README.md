@@ -1,6 +1,6 @@
 *DevConnect Backend II API*
 
--Backend desarrollado como proyecto académico para el curso ( BACKEND II de Coderhouse) utilizando Node.js, Express.js, MongoDB y Passport.js.
+-Backend desarrollado como proyecto académico para el curso ( BACKEND II de Coderhouse, curso77045) utilizando Node.js, Express.js, MongoDB y Passport.js.
 
 -Este proyecto implementa una API REST para la gestión de usuarios y eventos utilizando una arquitectura por capas (**Controller → Service → Repository**), autenticación mediante **JWT**, autorización basada en **roles**, contraseñas encriptadas con **bcrypt** y autenticación centralizada con **Passport.js**.
 
