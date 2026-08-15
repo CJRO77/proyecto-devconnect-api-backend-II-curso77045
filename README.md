@@ -35,6 +35,7 @@ Nodemailer
 - Validación de formato de email
 - Validación de email existente
 - Encriptación de contraseñas con bcrypt
+- El registro público nunca acepta role desde el body: siempre se crea como user
 - Login de usuarios
 - Registro de usuarios
 - Obtención del usuario autenticado
@@ -43,14 +44,15 @@ Nodemailer
 - Manejo de sesión mediante cookies HttpOnly
 - Arquitectura en capas (Controller → Service → Repository → DAO → Model)
 - DTOs para controlar los datos expuestos en cada respuesta (ningún endpoint expone password)
-- Manejo de errores centralizado mediante clase ServiceError con código HTTP explícito
-- Protección de rutas privadas
-- Control de acceso mediante roles
+- Middleware centralizado de manejo de errores con códigos HTTP diferenciados (400/401/403/404/409/500)
+- Protección de rutas privadas mediante Passport (JWT en cookie)
+- Control de acceso mediante roles (user, organizer, admin)
 - Autenticación basada en cookies HttpOnly (Passport + JWT)
 - Inscripción de usuarios a eventos (tickets)
 - Control de cupos disponibles
-- Cancelación de inscripciones
-- Notificación por email al confirmar una inscripción
+- Prevención de inscripciones duplicadas
+- Cancelación de inscripciones (sin borrado físico) con liberación automática de cupo
+- Notificación por email al confirmar una inscripción (Nodemailer)
 
 
 🏗️ **Arquitectura del proyecto**
@@ -126,9 +128,9 @@ Las rutas POST /sessions/login y POST /sessions/register usan estrategias passpo
 
 *Estrategia*	                *Tipo*               	             *Descripción*
 
--register	                -passport-local	         -Registra un nuevo usuario validando sus datos y encriptando la contraseña.
+-register	                 -passport-local	         -Registra un nuevo usuario validando sus datos y encriptando la contraseña.
 -login	                   -passport-local	         -Valida las credenciales del usuario.
--current	                   -passport-jwt	            -Obtiene el usuario autenticado desde el JWT almacenado en la cookie.
+-current	                 -passport-jwt	           -Obtiene el usuario autenticado desde el JWT almacenado en la cookie.
 
 📡 **Rutas de sesión**
 
@@ -138,6 +140,25 @@ Base: /api/v1/sessions
 MétodoRutaDescripciónRespuesta exitosaPOST/registerRegistra un nuevo usuario201 { "status": "success", "message": "Usuario registrado correctamente" }POST/loginAutentica al usuario y setea cookie currentUser200 { "status": "success", "message": "Login correcto" }GET/currentDevuelve los datos del usuario autenticado (requiere cookie válida)200 { "status": "success", "payload": { "id", "email", "role" } }POST/logoutElimina la cookie de sesión200 { "status": "success", "message": "Sesión cerrada correctamente" }
 
 Credenciales inválidas o token ausente/inválido → 401 { "status": "error", "message": "..." }
+
+👤 **Usuarios de prueba**
+
+Estos usuarios ya están cargados en la base de datos usada durante el desarrollo. Para replicar el ambiente en otra instalación, hay que registrarlos vía POST /sessions/register (quedan como user por defecto) y, para los roles organizer y admin, actualizar manualmente el campo role en MongoDB (Compass o mongosh), ya que el endpoint de actualización de perfil bloquea intencionalmente el cambio de role por seguridad.
+
+# Email                      Rol	                                             Uso sugerido
+jonathan2026@gmail.com	   admin	    Probar rutas exclusivas de admin: GET /users, POST /users, PUT /users/:id, DELETE /users/:id, modificar/cancelar cualquier evento,cancelarcualquier ticket
+maria@example.com	         organizer  Crear y publicar eventos, gestionar inscriptos de sus propios eventos
+organizer2@test.com        organizer  Probar el caso de "organizer intenta modificar/consultar un evento ajeno → 403"
+jonathan@gmail.com	       user	      Inscribirse a eventos, consultar y cancelar sus propias inscripciones
+lucace@gmail.com	         user	      Igual que el anterior; útil para probar inscripciones duplicadas o cupos entre dos usuarios distintos
+
+Las contraseñas no se documentan aquí por seguridad. Para crear tu propio set de usuarios de prueba desde cero, registrá cada uno vía /sessions/register y ajustá el rol en la base según necesites.
+
+
+
+
+
+
 
 
 👥 **Sistema de roles**
@@ -203,6 +224,12 @@ POST   /api/v1/events
 PUT    /api/v1/events/:id
 PATCH  /api/v1/events/:id/status
 
+*Tickets*
+
+POST   /api/v1/events/:eid/tickets
+GET    /api/v1/tickets/my-tickets
+GET    /api/v1/events/:eid/tickets
+PATCH  /api/v1/tickets/:tid/cancel
 
 🔒 **Permisos de acceso**
 
@@ -210,17 +237,17 @@ PATCH  /api/v1/events/:id/status
 Endpoint	                   User	          Organizer	             Admin
 GET /events	                   ✅	            ✅	                ✅
 POST /events                   ❌	            ✅	                ✅
-PUT /events/ :id               ❌	            ✅ (solo propios)	 ✅
-PATCH /events/:id/status	    ❌	            ✅ (solo propios)   ✅
+PUT /events/ :id               ❌	            ✅ (solo propios)	✅
+PATCH /events/:id/status	     ❌	            ✅ (solo propios)  ✅
 GET /users	                   ❌	            ❌	                ✅
-GET /users/:id	                ✅	            ✅	                ✅
+GET /users/:id	               ✅	            ✅	                ✅
 POST /users	                   ❌	            ❌	                ✅
-PUT /users/:id	                ❌	            ❌	                ✅
+PUT /users/:id	               ❌	            ❌	                ✅
 DELETE /users/:id	             ❌	            ❌	                ✅
-POST /events/:eid/tickets	    ✅	            ✅	                ✅
+POST /events/:eid/tickets	     ✅	            ✅	                ✅
 GET /tickets/my-tickets	       ✅	            ✅	                ✅
-GET /events/:eid/tickets	    ❌	            ✅ (solo propios)	 ✅
-PATCH /tickets/:tid/cancel	    ✅ (propios)	✅ (propios)	       ✅ (cualquiera)
+GET /events/:eid/tickets	     ❌	            ✅ (solo propios)	✅
+PATCH /tickets/:tid/cancel	   ✅ (propios)	  ✅ (propios)	      ✅ (cualquiera)
 
 
 
@@ -317,8 +344,9 @@ http://localhost:3000/api/v1
 - Inscripción duplicada para el mismo usuario y evento.
 - Cancelación de una inscripción propia y liberación del cupo.
 - Intento de cancelar un ticket ajeno.
-- Consulta de inscriptos de un evento como usuario común.
-- Consulta de inscriptos de un evento como organizer de otro evento.
+- Cancelación de ticket ajeno → 403.
+- Consulta de inscriptos de un evento como user común → 403.
+- Consulta de inscriptos de un evento como organizer de otro evento → 403.
 - Respuesta de ticket con populate sin exponer password del usuario.
 - Endpoints de error devolviendo el código HTTP correcto (400/401/403/404/409), no 500 genérico.
 - Registro con email duplicado → 409 (en vez del 401 genérico por defecto de Passport).
@@ -348,12 +376,12 @@ Representa la relación entre un usuario y un evento (solo referencias, sin dato
 
 ## Campo	                               Tipo                                          Descripción
    user	                             ObjectId	                              Referencia al usuario que se inscribió
-   event	                             ObjectId	                              Referencia al evento
-   quantity	                          Number	                                 Cantidad de lugares reservados (mínimo 1)
-   status	                          String	                                 pending | confirmed | cancelled
-   reservationCode	                 String	                                 Código único de reserva (ej. TCK-8F3A2X)
-   cancelledAt	                       Date	                                 Fecha de cancelación (null si sigue activo)
-   createdAt	                       Date	                                 Fecha de creación (automático)
+   event	                           ObjectId	                              Referencia al evento
+   quantity	                         Number	                                Cantidad de lugares reservados (mínimo 1)
+   status	                           String	                                pending | confirmed | cancelled
+   reservationCode	                 String	                                Código único de reserva (ej. TCK-8F3A2X)
+   cancelledAt	                     Date	                                  Fecha de cancelación (null si sigue activo)
+   createdAt	                       Date	                                  Fecha de creación (automático)
 
 **Estados del ticket**
 
@@ -383,8 +411,8 @@ por lo que cancelar un ticket libera el cupo automáticamente para nuevas inscri
 **Endpoints**
 ## Método	               Ruta	                     Acceso	                                       Descripción
 POST	         /api/v1/events/:eid/tickets      	 Autenticado	                                 Inscribirse a un evento
-GET	         /api/v1/tickets/my-tickets           Autenticado	                                 Ver mis inscripciones
-GET	         /api/v1/events/:eid/tickets	       Organizer (dueño del evento) o Admin	         Ver inscriptos a un evento
+GET	           /api/v1/tickets/my-tickets          Autenticado	                                 Ver mis inscripciones
+GET	           /api/v1/events/:eid/tickets	       Organizer (dueño del evento) o Admin	         Ver inscriptos a un evento
 PATCH	         /api/v1/tickets/:tid/cancel	       Dueño del ticket o Admin	                     Cancelar una inscripción
 
 **Cancelación**
@@ -397,16 +425,27 @@ Al confirmarse una inscripción, se envía un email con Nodemailer usando las cr
  no revierte la creación del ticket, solo se registra en consola.
 
 **Casos de prueba realizados**
-✅ Inscripción exitosa (con envío de email)
-✅ Inscripción sin sesión → 401
-✅ Inscripción a evento inexistente → 404
-✅ Inscripción a evento cancelado/finalizado → 409
-✅ Inscripción sin cupo suficiente → 409
-✅ Inscripción duplicada activa → 409
-✅ Cancelación propia → cupo liberado
-✅ Cancelación de ticket ajeno como user → 403
-✅ Consulta de inscriptos como user común → 403
-✅ Con
+
+✅ Registro → login → /current → logout → /current devuelve 401.
+✅ user intenta crear evento → 403.
+✅ organizer crea evento → user se inscribe → email recibido → cupo descontado.
+✅ user intenta inscribirse nuevamente al mismo evento → 409 (duplicado).
+✅ user intenta inscribirse a evento sin cupo → 409, mensaje claro.
+✅ user cancela su ticket → cupo liberado → nueva inscripción funciona.
+✅ organizer intenta modificar evento ajeno → 403.
+✅ admin modifica evento de otro organizador → éxito.
+✅ Respuestas de usuario, evento y ticket no contienen password.
+✅ Listado de eventos con ?status=published&page=2&limit=5 devuelve estructura paginada correcta.
+✅ Inscripción exitosa (con envío de email).
+✅ Inscripción sin sesión → 401.
+✅ Inscripción a evento inexistente → 404.
+✅ Inscripción a evento cancelado/finalizado → 409.
+✅ Inscripción sin cupo suficiente → 409.
+✅ Inscripción duplicada activa → 409.
+✅ Cancelación propia → cupo liberado.
+✅ Cancelación de ticket ajeno como user → 403.
+✅ Consulta de inscriptos como user común → 403.
+✅ Consulta de inscriptos de un evento como organizer de otro evento → 403.
 
 
 👨‍💻 **Autor**
