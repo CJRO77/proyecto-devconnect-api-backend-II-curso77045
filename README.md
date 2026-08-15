@@ -154,13 +154,6 @@ lucace@gmail.com	         user	      Igual que el anterior; útil para probar in
 
 Las contraseñas no se documentan aquí por seguridad. Para crear tu propio set de usuarios de prueba desde cero, registrá cada uno vía /sessions/register y ajustá el rol en la base según necesites.
 
-
-
-
-
-
-
-
 👥 **Sistema de roles**
 
 *User*
@@ -249,6 +242,126 @@ GET /tickets/my-tickets	       ✅	            ✅	                ✅
 GET /events/:eid/tickets	     ❌	            ✅ (solo propios)	✅
 PATCH /tickets/:tid/cancel	   ✅ (propios)	  ✅ (propios)	      ✅ (cualquiera)
 
+
+
+📘 **Ejemplos de uso THUNDER CLIENT**
+
+# Registro de usuario
+
+POST /api/v1/sessions/register
+json
+{
+    "firstname": "Ana",
+    "lastname": "Gomez",
+    "email": "ana@example.com",
+    "password": "123456"
+}
+
+# Respuesta 201:
+
+json
+{
+    "status": "success",
+    "message": "Usuario registrado correctamente",
+    "data": {
+        "id": "66a1f...",
+        "firstname": "Ana",
+        "lastname": "Gomez",
+        "email": "ana@example.com",
+        "role": "user"
+    }
+}
+
+# Login
+
+POST /api/v1/sessions/login
+json
+{
+    "email": "ana@example.com",
+    "password": "123456"
+}
+
+Respuesta 200, y setea la cookie currentUser (JWT, httpOnly):
+
+json
+{
+    "status": "success",
+    "message": "Login correcto",
+    "data": { "id": "66a1f...", "firstname": "Ana", "lastname": "Gomez", "email": "ana@example.com", "role": "user" }
+}
+
+# Listado de eventos con filtros y paginación
+
+GET /api/v1/events?status=published&page=2&limit=5
+
+Respuesta 200:
+
+json
+{
+    "status": "success",
+    "data": [
+        { "id": "6690...", "title": "Congreso Tech 2026", "status": "published", "...": "..." }
+    ],
+    "page": 2,
+    "limit": 5,
+    "total": 27,
+    "totalPages": 6
+}
+
+# Inscribirse a un evento (con cupo disponible)
+
+POST /api/v1/events/6690.../tickets
+json
+{
+    "quantity": 1
+}
+
+Respuesta 201:
+
+json
+{
+    "success": true,
+    "message": "Inscripción confirmada",
+    "data": {
+        "id": "665f...",
+        "user": { "id": "...", "firstname": "Ana", "lastname": "Gomez", "email": "ana@example.com", "role": "user" },
+        "event": { "id": "6690...", "title": "Congreso Tech 2026", "date": "...", "location": "...", "status": "published", "capacity": 100 },
+        "quantity": 1,
+        "status": "confirmed",
+        "reservationCode": "TCK-7QK2XA",
+        "cancelledAt": null,
+        "createdAt": "..."
+    }
+}
+
+# Además se envía un email de confirmación por Nodemailer.
+
+# Inscripción duplicada o sin cupo
+
+POST /api/v1/events/6690.../tickets
+
+Respuesta 409:
+
+json
+{
+    "status": "error",
+    "message": "Ya tienes una inscripción activa para este evento"
+}
+
+(o "No hay cupos suficientes. Cupos disponibles: 0" si el motivo es falta de cupo)
+
+# Cancelar una inscripción propia
+
+PATCH /api/v1/tickets/665f.../cancel
+
+Respuesta 200:
+
+json
+{
+    "success": true,
+    "message": "Inscripción cancelada",
+    "data": { "id": "665f...", "status": "cancelled", "cancelledAt": "2026-08-20T14:00:00.000Z", "...": "..." }
+}
 
 
 🔑 **Variables de entorno**
